@@ -42,6 +42,34 @@ function heartY(k) {
     return 12 * Math.cos(k) - 5 * Math.cos(2*k) - 2 * Math.cos(3*k) - Math.cos(4*k);
 }
 
+    // دالة لرسم وتحديث القلوب المتناثرة
+function drawScatteredHearts() {
+    scatteredHearts.forEach(heart => {
+        // تحديث الموقع
+        heart.x += heart.speedX;
+        heart.y += heart.speedY;
+
+        // إذا خرج القلب عن الشاشة، أعده من الجانب الآخر
+        if (heart.x > canvas.width + heart.size) heart.x = -heart.size;
+        if (heart.x < -heart.size) heart.x = canvas.width + heart.size;
+        if (heart.y > canvas.height + heart.size) heart.y = -heart.size;
+        if (heart.y < -heart.size) heart.y = canvas.height + heart.size;
+
+        // رسم شكل قلب بسيط
+        ctx.strokeStyle = `hsl(${heart.hue}, 100%, 70%)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        
+        let s = heart.size;
+        let x = heart.x;
+        let y = heart.y;
+
+        ctx.moveTo(x, y - s / 2); // قمة القلب
+        ctx.bezierCurveTo(x + s, y - s, x + s, y + s / 4, x, y + s); // الجانب الأيمن
+        ctx.bezierCurveTo(x - s, y + s / 4, x - s, y - s, x, y - s / 2); // الجانب الأيسر
+        ctx.stroke();
+    });
+}
 const numSteps = 6000;
 const scale = 20;
 
@@ -101,3 +129,4 @@ drawStep();
 </body>
 
 </html>
+
