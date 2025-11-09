@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قلب متدرج الألوان مع حرف B</title>
+<style>
+    /* (نفس كود الـ CSS الخاص بك بالكامل هنا) */
+    body {
+        margin: 0;
+        background: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+<canvas id="heartCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('heartCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+// --- دوال القلب الكبيرة (كما هي) ---
+function heartX(k) {
+    return 15 * Math.pow(Math.sin(k), 3);
+}
+
+function heartY(k) {
+    return 12 * Math.cos(k) - 5 * Math.cos(2*k) - 2 * Math.cos(3*k) - Math.cos(4*k);
+}
+
+const numSteps = 6000;
+const scale = 20;
+
+let i = 0;
+let prevX = null;
+let prevY = null;
+
+
+function drawStep() {
+
+    // --- 🌟🌟 A. التعديل هنا 🌟🌟 ---
+    // 1. تحقق أولاً إذا انتهى رسم القلب
+    if(i >= numSteps) {
+        
+        // 2. بما أن القلب اكتمل، ارسم حرف B الآن
+        ctx.fillStyle = "white"; // لون أبيض ساطع
+        ctx.font = "bold 200px Arial"; // خط كبير وعريض
+        ctx.textAlign = "center"; // توسيط أفقي
+        ctx.textBaseline = "middle"; // توسيط رأسي
+        
+        // 3. ارسم الحرف في منتصف القلب (مع تعديل بسيط للمكان)
+        ctx.fillText("B", centerX, centerY + 20); 
+        
+        // 4. أوقف الأنيميشن
+        return; 
+    }
+
+    // --- B. إذا لم ينتهِ الرسم، استمر في رسم القلب ---
+    const t = i;
+    const x = heartX(t) * scale + centerX;
+    const y = -heartY(t) * scale + centerY;
+
+    const hue = i / numSteps * 360;
+    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+    ctx.lineWidth = 2;
+
+    if(prevX !== null && prevY !== null){
+        ctx.beginPath();
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    }
+
+    prevX = x;
+    prevY = y;
+    i++;
+
+    // --- C. اطلب الإطار التالي (الأنيميشن) ---
+    setTimeout(() => {
+        requestAnimationFrame(drawStep);
+    }, 1); 
+}
+
+// ابدأ الرسم
+drawStep();
+</script>
+</body>
+</html>
