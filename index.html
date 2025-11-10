@@ -25,7 +25,7 @@
 
 <script>
 const canvas = document.getElementById('heartCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('3d');
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -70,7 +70,7 @@ function drawScatteredHearts() {
         ctx.stroke();
     });
 }
-const numSteps = 6000;
+const numSteps = 3000;
 const scale = 20;
 
 let i = 0;
@@ -82,7 +82,7 @@ function drawStep() {
 
     // --- 🌟🌟 A. التعديل هنا 🌟🌟 ---
     // 1. تحقق أولاً إذا انتهى رسم القلب
-    if(i >= numSteps) {
+     {
         
         // 2. بما أن القلب اكتمل، ارسم حرف B الآن
         ctx.fillStyle = "white"; // لون أبيض ساطع
@@ -129,4 +129,5 @@ drawStep();
 </body>
 
 </html>
+
 
