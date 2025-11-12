@@ -72,7 +72,9 @@ function initSpace(){
       y: Math.random() * bgCanvas.height,
       z: Math.random() * 3 + 0.5, // عمق
       hue: Math.random() * 360,
-      sizeBase: 0.6 + Math.random() * 1.8
+      sizeBase: 0.6 + Math.random() * 1.8,
+      vx: 0,
+      vy: 0
     });
   }
 }
@@ -84,27 +86,58 @@ function drawSpaceBackground(){
 
   // نرسم سماء من نقاط/قلوب صغيرة (تتحرك لأسفل بحسب العمق)
   for (let h of spaceHearts){
-    h.y += 0.4 * h.z; // كلما z أكبر تتحرك أسرع (إحساس بالعمق)
+    // تفاعل مع الماوس: دفع النجوم بعيدًا عند الاقتراب
+    const mx = mouse.x, my = mouse.y;
+    if (mx !== null && my !== null){
+      const dx = h.x - mx;
+      const dy = h.y - my;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const threshold = 120 * h.z; // مدى التفاعل يتأثر بالعمق
+      if (dist < threshold && dist > 0){
+        const force = (threshold - dist) / threshold * 6; // قوة دفع
+        h.vx += (dx / dist) * force;
+        h.vy += (dy / dist) * force;
+      }
+    }
 
-    if (h.y > bgCanvas.height + 10){
-      h.y = -10;
+    // الحركة مع الاحتفاظ بالسرعة والزمن
+    h.vx *= 0.92;
+    h.vy *= 0.92;
+    h.x += h.vx;
+    h.y += h.vy + 0.4 * h.z; // حركة هبوطية
+
+    // إعادة توليد النجم/القلب لو خرج من الشاشة
+    if (h.y > bgCanvas.height + 20 || h.x < -50 || h.x > bgCanvas.width + 50){
+      h.y = -10 - Math.random()*50;
       h.x = Math.random() * bgCanvas.width;
       h.z = Math.random() * 3 + 0.5;
       h.hue = Math.random() * 360;
+      h.vx = 0; h.vy = 0;
     }
 
     const r = h.sizeBase * h.z;
-    bgCtx.beginPath();
-    // نرسم دوائر بسيطة (لو عايز شكل قلب صغير رُخّص ده ممكن يعاد)
+    // نرسم قلوب (Emoji) بدلًا من دوائر لتحقيق الشكل المطلوب
     bgCtx.fillStyle = `hsl(${h.hue}, 90%, 60%)`;
-    bgCtx.arc(h.x, h.y, r, 0, Math.PI*2);
-    bgCtx.fill();
+    bgCtx.textAlign = 'center';
+    bgCtx.textBaseline = 'middle';
+    // حجم الخط يتناسب مع "العمق"
+    bgCtx.font = `${Math.max(8, Math.round(r * 8))}px serif`;
+    bgCtx.fillText('❤', h.x, h.y);
   }
 }
+
+// تتبع الماوس لبناء تأثير التفاعل
+const mouse = { x: null, y: null };
+window.addEventListener('mousemove', (e)=>{
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
 
 /* ================= رسم القلب تدريجيًا (ثابت على كانفاس علوي) ================= */
 let stepI = 0;
 let prevX = null, prevY = null;
+const heartPoints = []; // لتخزين نقاط القلب للرسم والنبض لاحقًا
+let isPulsing = false;
 const scale = 20;
 const numSteps = 3500; // عدد الخطوات (يمكن تغييره)
 
@@ -123,8 +156,15 @@ function drawHeartStep(){
     ctx.beginPath();
     ctx.moveTo(prevX, prevY);
     ctx.lineTo(x, y);
+    // توهج بسيط للقلب
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 15;
     ctx.stroke();
+    // أطفئ الظل بعد الرسم لعدم تأثيره على رسومات أخرى
+    ctx.shadowBlur = 0;
   }
+  // خزّن النقطة بالنسبة للمركز لاستخدامها في نبض القلب لاحقًا
+  heartPoints.push({ dx: x - centerX, dy: y - centerY, hue });
   prevX = x; prevY = y;
   stepI++;
 
@@ -132,9 +172,42 @@ function drawHeartStep(){
   if (stepI < numSteps){
     requestAnimationFrame(drawHeartStep);
   } else {
-    // اختياري: عمل وميض نهائي أو تكملة تَأثير بعد الانتهاء
-    // هنا نترك الخلفية تعمل وحدها (الخلفية تُحدّث في حلقة مستقلة أدناه)
+    // عند اكتمال الرسم، نبدأ تأثير النبض المستمر
+    isPulsing = true;
+    pulseHeart();
   }
+}
+
+function pulseHeart(){
+  if (!isPulsing) return;
+  // نمسح كانفاس القلب ثم نعيد رسم المسار كاملاً مع مقياس صغير متغير
+  ctx.clearRect(0,0,heartCanvas.width, heartCanvas.height);
+
+  const time = Date.now();
+  const s = 1 + 0.03 * Math.sin(time / 160);
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.scale(s, s);
+  ctx.lineWidth = 2;
+
+  // نرسم كل القطع كخطوط متتابعة مع توهج
+  ctx.shadowBlur = 20;
+  for (let i=1;i<heartPoints.length;i++){
+    const a = heartPoints[i-1];
+    const b = heartPoints[i];
+    ctx.beginPath();
+    ctx.moveTo(a.dx, a.dy);
+    ctx.lineTo(b.dx, b.dy);
+    ctx.strokeStyle = `hsl(${b.hue}, 100%, 50%)`;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.stroke();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  requestAnimationFrame(pulseHeart);
 }
 
 /* ================= حلقة أنيميشن الخلفية المستمرة ================= */
@@ -151,8 +224,14 @@ drawHeartStep();      // القلب يبدأ بالتكوّن تدريجياً
 window.addEventListener('resize', ()=>{
   resizeAll();
   initSpace();
-  // لا نمسح كانفاس القلب هنا لأننا نريد القلب يبقى؛ لكن بعد تغيير الحجم، قد ترغب تمسحه وتعيد رسمه
-  // لو حابب أعيد رسم القلب بشكل متناسب بعد الريدسايز أقدر أعمله لو طلبت
+  // عند تغيير الحجم نعيد تهيئة رسم القلب: نمسح الكانفاس العلوي، نعيد المتغيرات الأساسية
+  ctx.clearRect(0,0,heartCanvas.width, heartCanvas.height);
+  stepI = 0;
+  prevX = null; prevY = null;
+  heartPoints.length = 0;
+  isPulsing = false;
+  // نبدأ رسم القلب من جديد
+  drawHeartStep();
 });
 </script>
 </body>
