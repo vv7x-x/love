@@ -7,165 +7,274 @@
 <style>
   html,body { height:100%; margin:0; background:black; }
   .wrap {
-    position:relative;
-    width:100%;
-    height:100vh;
-    overflow:hidden;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-  }
-  canvas {
-    position:absolute;
-    left:0;
-    top:0;
-    width:100%;
-    height:100%;
-    display:block;
-  }
-  /* ترتيب الطبقات: الخلفية تحت، القلب فوق */
-  #bgCanvas { z-index:1; }
-  #heartCanvas { z-index:2; pointer-events:none; } /* pointer-events none حتى لا تعطل النقرات */
-</style>
-</head>
-<body>
-<div class="wrap">
-  <canvas id="bgCanvas"></canvas>
-  <canvas id="heartCanvas"></canvas>
-</div>
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>😍</title>
+        <style>
+          html,
+          body {
+            height: 100%;
+            margin: 0;
+            background: black;
+          }
 
-<script>
-/* ================= إعداد الكانفاسات والقياسات ================= */
-const bgCanvas = document.getElementById('bgCanvas');
-const heartCanvas = document.getElementById('heartCanvas');
-const bgCtx = bgCanvas.getContext('2d');
-const ctx = heartCanvas.getContext('2d');
+          .wrap {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
 
-function resizeAll(){
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  [bgCanvas, heartCanvas].forEach(c=>{
-    c.width = w;
-    c.height = h;
-  });
-  centerX = Math.round(w/2);
-  centerY = Math.round(h/2);
-}
-window.addEventListener('resize', resizeAll);
+          canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+          }
 
-let centerX = window.innerWidth/2;
-let centerY = window.innerHeight/2;
-resizeAll();
+          /* ترتيب الطبقات: الخلفية تحت، القلب فوق */
+          #bgCanvas {
+            z-index: 1;
+          }
 
-/* ================= معادلات القلب الكبيرة ================= */
-function heartX(k){ return 15 * Math.pow(Math.sin(k), 3); }
-function heartY(k){ return 12 * Math.cos(k) - 5 * Math.cos(2*k) - 2 * Math.cos(3*k) - Math.cos(4*k); }
+          #heartCanvas {
+            z-index: 2;
+            pointer-events: none; /* حتى لا تعطل التفاعلات */
+          }
+        </style>
+      </head>
 
-/* ================= قلوب/نجوم الفضاء (الخلفية 3D) ================= */
-const spaceHearts = [];
-const SPACE_COUNT = 140;
-function initSpace(){
-  spaceHearts.length = 0;
-  for (let j=0;j<SPACE_COUNT;j++){
-    spaceHearts.push({
-      x: Math.random() * bgCanvas.width,
-      y: Math.random() * bgCanvas.height,
-      z: Math.random() * 3 + 0.5, // عمق
-      hue: Math.random() * 360,
-      sizeBase: 0.6 + Math.random() * 1.8,
-      vx: 0,
-      vy: 0
-    });
-  }
-}
-initSpace();
+      <body>
+        <div class="wrap">
+          <canvas id="bgCanvas"></canvas>
+          <canvas id="heartCanvas"></canvas>
+        </div>
 
-function drawSpaceBackground(){
-  // نمسح خلفية كل فريم
-  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+        <script>
+          /* ================= إعداد الكانفاسات والقياسات ================= */
+          const bgCanvas = document.getElementById("bgCanvas");
+          const heartCanvas = document.getElementById("heartCanvas");
+          const bgCtx = bgCanvas.getContext("2d");
+          const ctx = heartCanvas.getContext("2d");
 
-  // نرسم سماء من نقاط/قلوب صغيرة (تتحرك لأسفل بحسب العمق)
-  for (let h of spaceHearts){
-    // تفاعل مع الماوس: دفع النجوم بعيدًا عند الاقتراب
-    const mx = mouse.x, my = mouse.y;
-    if (mx !== null && my !== null){
-      const dx = h.x - mx;
-      const dy = h.y - my;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const threshold = 120 * h.z; // مدى التفاعل يتأثر بالعمق
-      if (dist < threshold && dist > 0){
-        const force = (threshold - dist) / threshold * 6; // قوة دفع
-        h.vx += (dx / dist) * force;
-        h.vy += (dy / dist) * force;
-      }
-    }
+          function resizeAll() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            [bgCanvas, heartCanvas].forEach((c) => {
+              c.width = w;
+              c.height = h;
+            });
+            centerX = Math.round(w / 2);
+            centerY = Math.round(h / 2);
+          }
 
-    // الحركة مع الاحتفاظ بالسرعة والزمن
-    h.vx *= 0.92;
-    h.vy *= 0.92;
-    h.x += h.vx;
-    h.y += h.vy + 0.4 * h.z; // حركة هبوطية
+          window.addEventListener("resize", resizeAll);
 
-    // إعادة توليد النجم/القلب لو خرج من الشاشة
-    if (h.y > bgCanvas.height + 20 || h.x < -50 || h.x > bgCanvas.width + 50){
-      h.y = -10 - Math.random()*50;
-      h.x = Math.random() * bgCanvas.width;
-      h.z = Math.random() * 3 + 0.5;
-      h.hue = Math.random() * 360;
-      h.vx = 0; h.vy = 0;
-    }
+          let centerX = window.innerWidth / 2;
+          let centerY = window.innerHeight / 2;
+          resizeAll();
 
-    const r = h.sizeBase * h.z;
-    // نرسم قلوب (Emoji) بدلًا من دوائر لتحقيق الشكل المطلوب
-    bgCtx.fillStyle = `hsl(${h.hue}, 90%, 60%)`;
-    bgCtx.textAlign = 'center';
-    bgCtx.textBaseline = 'middle';
-    // حجم الخط يتناسب مع "العمق"
-    bgCtx.font = `${Math.max(8, Math.round(r * 8))}px serif`;
-    bgCtx.fillText('❤', h.x, h.y);
-  }
-}
+          /* ================= معادلات القلب الكبيرة ================= */
+          function heartX(k) {
+            return 15 * Math.pow(Math.sin(k), 3);
+          }
 
-// تتبع الماوس لبناء تأثير التفاعل
-const mouse = { x: null, y: null };
-window.addEventListener('mousemove', (e)=>{
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-});
+          function heartY(k) {
+            return (
+              12 * Math.cos(k) - 5 * Math.cos(2 * k) - 2 * Math.cos(3 * k) - Math.cos(4 * k)
+            );
+          }
 
-/* ================= رسم القلب تدريجيًا (ثابت على كانفاس علوي) ================= */
-let stepI = 0;
-let prevX = null, prevY = null;
-const heartPoints = []; // لتخزين نقاط القلب للرسم والنبض لاحقًا
-let isPulsing = false;
-const scale = 20;
-const numSteps = 3500; // عدد الخطوات (يمكن تغييره)
+          /* ================= قلوب/نجوم الفضاء (الخلفية 3D) ================= */
+          const spaceHearts = [];
+          const SPACE_COUNT = 140;
 
-function drawHeartStep(){
-  // لا نمسح كانفاس القلب — حتى تبقى الخطوط السابقة متجمعة (persistent)
-  // فقط نرسم خطوة جديدة من القلب
-  const t = stepI;
-  const x = heartX(t) * scale + centerX;
-  const y = -heartY(t) * scale + centerY;
+          function initSpace() {
+            spaceHearts.length = 0;
+            for (let j = 0; j < SPACE_COUNT; j++) {
+              spaceHearts.push({
+                x: Math.random() * bgCanvas.width,
+                y: Math.random() * bgCanvas.height,
+                z: Math.random() * 3 + 0.5, // عمق
+                hue: Math.random() * 360,
+                sizeBase: 0.6 + Math.random() * 1.8,
+                vx: 0,
+                vy: 0,
+              });
+            }
+          }
 
-  const hue = (t / numSteps) * 360;
-  ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-  ctx.lineWidth = 2;
+          initSpace();
 
-  if (prevX !== null && prevY !== null){
-    ctx.beginPath();
-    ctx.moveTo(prevX, prevY);
-    ctx.lineTo(x, y);
-    // توهج بسيط للقلب
-    ctx.shadowColor = ctx.strokeStyle;
-    ctx.shadowBlur = 15;
-    ctx.stroke();
-    // أطفئ الظل بعد الرسم لعدم تأثيره على رسومات أخرى
-    ctx.shadowBlur = 0;
-  }
-  // خزّن النقطة بالنسبة للمركز لاستخدامها في نبض القلب لاحقًا
-  heartPoints.push({ dx: x - centerX, dy: y - centerY, hue });
-  prevX = x; prevY = y;
+          // تتبع الماوس لبناء تأثير التفاعل
+          const mouse = { x: null, y: null };
+          window.addEventListener("mousemove", (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+          });
+
+          function drawSpaceBackground() {
+            // نمسح خلفية كل فريم
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+            // نرسم سماء من نقاط/قلوب صغيرة (تتحرك لأسفل بحسب العمق)
+            for (let h of spaceHearts) {
+              // تفاعل مع الماوس: دفع النجوم بعيدًا عند الاقتراب
+              const mx = mouse.x,
+                my = mouse.y;
+              if (mx !== null && my !== null) {
+                const dx = h.x - mx;
+                const dy = h.y - my;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const threshold = 120 * h.z; // مدى التفاعل يتأثر بالعمق
+                if (dist < threshold && dist > 0) {
+                  const force = ((threshold - dist) / threshold) * 6; // قوة دفع
+                  h.vx += (dx / dist) * force;
+                  h.vy += (dy / dist) * force;
+                }
+              }
+
+              // الحركة مع الاحتفاظ بالسرعة والزمن
+              h.vx *= 0.92;
+              h.vy *= 0.92;
+              h.x += h.vx;
+              h.y += h.vy + 0.4 * h.z; // حركة هبوطية
+
+              // إعادة توليد النجم/القلب لو خرج من الشاشة
+              if (h.y > bgCanvas.height + 20 || h.x < -50 || h.x > bgCanvas.width + 50) {
+                h.y = -10 - Math.random() * 50;
+                h.x = Math.random() * bgCanvas.width;
+                h.z = Math.random() * 3 + 0.5;
+                h.hue = Math.random() * 360;
+                h.vx = 0;
+                h.vy = 0;
+              }
+
+              const r = h.sizeBase * h.z;
+              // نرسم قلوب (Emoji) بدلًا من دوائر
+              bgCtx.fillStyle = `hsl(${h.hue}, 90%, 60%)`;
+              bgCtx.textAlign = "center";
+              bgCtx.textBaseline = "middle";
+              bgCtx.font = `${Math.max(8, Math.round(r * 8))}px serif`;
+              bgCtx.fillText("❤", h.x, h.y);
+            }
+          }
+
+          /* ================= رسم القلب تدريجيًا (ثابت على كانفاس علوي) ================= */
+          let stepI = 0;
+          let prevX = null,
+            prevY = null;
+          const heartPoints = []; // لتخزين نقاط القلب للرسم والنبض لاحقًا
+          let isPulsing = false;
+          const scale = 20;
+          const numSteps = 3500; // عدد الخطوات (يمكن تغييره)
+
+          function drawHeartStep() {
+            // لا نمسح كانفاس القلب — حتى تبقى الخطوط السابقة متجمعة (persistent)
+            // فقط نرسم خطوة جديدة من القلب
+            const t = stepI;
+            const x = heartX(t) * scale + centerX;
+            const y = -heartY(t) * scale + centerY;
+
+            const hue = (t / numSteps) * 360;
+            ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.lineWidth = 2;
+
+            if (prevX !== null && prevY !== null) {
+              ctx.beginPath();
+              ctx.moveTo(prevX, prevY);
+              ctx.lineTo(x, y);
+              // توهج بسيط للقلب
+              ctx.shadowColor = ctx.strokeStyle;
+              ctx.shadowBlur = 15;
+              ctx.stroke();
+              // أطفئ الظل بعد الرسم لعدم تأثيره على رسومات أخرى
+              ctx.shadowBlur = 0;
+            }
+
+            // خزّن النقطة بالنسبة للمركز لاستخدامها في نبض القلب لاحقًا
+            heartPoints.push({ dx: x - centerX, dy: y - centerY, hue });
+            prevX = x;
+            prevY = y;
+            stepI++;
+
+            // نكمل حتى نصل للنهاية؛ وإلا نقف
+            if (stepI < numSteps) {
+              requestAnimationFrame(drawHeartStep);
+            } else {
+              // عند اكتمال الرسم، نبدأ تأثير النبض المستمر
+              isPulsing = true;
+              pulseHeart();
+            }
+          }
+
+          function pulseHeart() {
+            if (!isPulsing) return;
+            // نمسح كانفاس القلب ثم نعيد رسم المسار كاملاً مع مقياس صغير متغير
+            ctx.clearRect(0, 0, heartCanvas.width, heartCanvas.height);
+
+            const time = Date.now();
+            const s = 1 + 0.03 * Math.sin(time / 160);
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(s, s);
+            ctx.lineWidth = 2;
+
+            // نرسم كل القطع كخطوط متتابعة مع توهج
+            ctx.shadowBlur = 20;
+            for (let i = 1; i < heartPoints.length; i++) {
+              const a = heartPoints[i - 1];
+              const b = heartPoints[i];
+              ctx.beginPath();
+              ctx.moveTo(a.dx, a.dy);
+              ctx.lineTo(b.dx, b.dy);
+              ctx.strokeStyle = `hsl(${b.hue}, 100%, 50%)`;
+              ctx.shadowColor = ctx.strokeStyle;
+              ctx.stroke();
+            }
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+
+            requestAnimationFrame(pulseHeart);
+          }
+
+          /* ================= حلقة أنيميشن الخلفية المستمرة ================= */
+          function animateBackground() {
+            drawSpaceBackground();
+            requestAnimationFrame(animateBackground);
+          }
+
+          /* ================= ابدأ الرسومات ================= */
+          animateBackground(); // الخلفية تبدأ فورًا وتستمر
+          drawHeartStep(); // القلب يبدأ بالتكوّن تدريجياً
+
+          /* ================= إذا تم تغيير الحجم -> أعد تهيئة النجوم والحسابات ================= */
+          window.addEventListener("resize", () => {
+            resizeAll();
+            initSpace();
+            // عند تغيير الحجم نعيد تهيئة رسم القلب: نمسح الكانفاس العلوي، نعيد المتغيرات الأساسية
+            ctx.clearRect(0, 0, heartCanvas.width, heartCanvas.height);
+            stepI = 0;
+            prevX = null;
+            prevY = null;
+            heartPoints.length = 0;
+            isPulsing = false;
+            // نبدأ رسم القلب من جديد
+            drawHeartStep();
+          });
+        </script>
+      </body>
+    </html>
   stepI++;
 
   // نكمل حتى نصل للنهاية؛ وإلا نقف
